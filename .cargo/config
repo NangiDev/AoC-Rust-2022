@@ -1,6 +1,7 @@
 [alias]
 scaffold = "run --bin scaffold -- "
 download = "run --bin download -- "
+bm = "run --bin bench_score -- "
 
 solve = "run --bin"
 all = "run"

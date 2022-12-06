@@ -6,6 +6,7 @@
 use core::fmt;
 use std::{
     fs::{File, OpenOptions},
+    io::{BufRead, BufReader, Write},
     process::{self, Command},
 };
 
@@ -21,6 +22,56 @@ struct Score {
     best1: String,
     latest2: String,
     best2: String,
+}
+
+impl Score {
+    fn update_score(&mut self, line: String) {
+        let values: Vec<String> = line.split("    ").map(|f| f.to_string()).collect();
+        for v in values {
+            if v.contains(':') {
+                let v = v.split(':').collect::<Vec<&str>>();
+                if v[0].eq("l1") {
+                    self.latest1 = v[1].to_string();
+                } else if v[0].eq("l2") {
+                    self.latest2 = v[1].to_string();
+                } else if v[0].eq("b1") {
+                    self.best1 = v[1].to_string();
+                } else if v[0].eq("b2") {
+                    self.best2 = v[1].to_string();
+                }
+            }
+        }
+    }
+
+    pub fn write_self_to_file(&mut self, mut file: File) {
+        let buf = BufReader::new(&file).lines();
+
+        let mut line_found = false;
+        for line in buf {
+            match line {
+                Ok(l) => {
+                    if l[..2].eq(&self.day) {
+                        line_found = true;
+                        self.update_score(l);
+                        dbg!(&self);
+                        break;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to read benchmark file: {}", e);
+                    process::exit(1);
+                }
+            }
+        }
+
+        if !line_found {
+            let line = format!(
+                "{}    l1:{}    b1{}    l2:{}    b2:{}\n",
+                self.day, self.latest1, self.best1, self.latest2, self.best2
+            );
+            let _ = file.write_all(line.as_bytes());
+        }
+    }
 }
 
 impl fmt::Display for Score {
@@ -42,7 +93,11 @@ fn parse_args() -> Result<Args, pico_args::Error> {
 }
 
 fn create_file(path: &str) -> Result<File, std::io::Error> {
-    OpenOptions::new().write(true).create(true).open(path)
+    OpenOptions::new()
+        .write(true)
+        .read(true)
+        .create(true)
+        .open(path)
 }
 
 fn main() {
@@ -57,10 +112,10 @@ fn main() {
     let benchmark_path = "src/benchmarks/table.txt".to_string();
     match create_file(&benchmark_path) {
         Ok(_) => {
-            println!("Created empty example file \"{}\"", &benchmark_path);
+            println!("Created empty bechmark file \"{}\"", &benchmark_path);
         }
         Err(e) => {
-            eprintln!("Failed to create example file: {}", e);
+            eprintln!("Failed to create bechmark file: {}", e);
             process::exit(1);
         }
     }
@@ -91,7 +146,7 @@ fn main() {
         .map(|f| f.replace(['(', ')', ' ', '\n'], ""))
         .collect();
 
-    let score = Score {
+    let mut score = Score {
         day: day_padded,
         latest1: stdout[1].to_string(),
         best1: stdout[1].to_string(),
@@ -99,5 +154,8 @@ fn main() {
         best2: stdout[3].to_string(),
     };
 
-    println!("{}", &score)
+    let file = create_file(&benchmark_path).unwrap();
+    score.write_self_to_file(file);
+
+    //println!("{}", &score)
 }

@@ -6,20 +6,26 @@ enum Operation {
 
 #[derive(Debug)]
 struct Item {
-    worry: u32,
+    worry: u128,
     holder: usize,
 }
 
 impl Item {
-    pub fn perform_op(&mut self, op: &Operation, op_num: &Option<u32>, divider: u32) {
+    pub fn perform_op(
+        &mut self,
+        op: &Operation,
+        op_num: &Option<u128>,
+        divider: u128,
+        big_prime: u128,
+    ) {
         let op_num = op_num.unwrap_or(self.worry);
         match op {
-            Operation::Add => self.worry = (self.worry + op_num) / divider,
-            Operation::Mul => self.worry = (self.worry * op_num) / divider,
+            Operation::Add => self.worry = (self.worry + op_num) % big_prime / divider,
+            Operation::Mul => self.worry = (self.worry * op_num) % big_prime / divider,
         }
     }
 
-    pub fn throw_item_true(&self, div: &u32) -> bool {
+    pub fn throw_item_true(&self, div: &u128) -> bool {
         self.worry % div == 0
     }
 }
@@ -28,11 +34,11 @@ impl Item {
 struct Monkey {
     id: usize,
     op: Operation,
-    op_num: Option<u32>,
-    div: u32,
+    op_num: Option<u128>,
+    div: u128,
     true_throw_to: usize,
     false_throw_to: usize,
-    inspect: u32,
+    inspect: u128,
 }
 
 impl Default for Monkey {
@@ -53,7 +59,7 @@ impl Monkey {
     pub fn extract_items(&mut self, line: &str) -> Vec<Item> {
         line.split_whitespace()
             .map(|l| l.replace(',', ""))
-            .filter_map(|l| l.parse::<u32>().ok())
+            .filter_map(|l| l.parse::<u128>().ok())
             .map(|worry| Item {
                 worry,
                 holder: self.id,
@@ -68,14 +74,14 @@ impl Monkey {
         }
         self.op_num = line
             .split_whitespace()
-            .filter_map(|l| l.parse::<u32>().ok())
+            .filter_map(|l| l.parse::<u128>().ok())
             .last()
     }
 
     pub fn extract_div(&mut self, line: &str) {
         self.div = line
             .split_whitespace()
-            .filter_map(|l| l.parse::<u32>().ok())
+            .filter_map(|l| l.parse::<u128>().ok())
             .last()
             .unwrap();
     }
@@ -97,13 +103,14 @@ impl Monkey {
     }
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u128> {
     let lines: Vec<&str> = input.lines().collect();
     let step = 7;
 
     let mut items: Vec<Item> = Vec::new();
 
     let mut monkeys: Vec<Monkey> = Vec::new();
+    let mut big_prime = 1;
 
     for x in (0..lines.len()).step_by(step) {
         let mut monkey = Monkey::default();
@@ -127,6 +134,8 @@ pub fn part_one(input: &str) -> Option<u32> {
             }
         }
 
+        big_prime *= monkey.div;
+
         monkeys.push(monkey);
     }
 
@@ -135,7 +144,7 @@ pub fn part_one(input: &str) -> Option<u32> {
             for item in items.iter_mut() {
                 if monkey.id == item.holder {
                     monkey.inspect += 1;
-                    item.perform_op(&monkey.op, &monkey.op_num, 3);
+                    item.perform_op(&monkey.op, &monkey.op_num, 3, big_prime);
                     if item.throw_item_true(&monkey.div) {
                         item.holder = monkey.true_throw_to;
                     } else {
@@ -156,13 +165,14 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(result)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u128> {
     let lines: Vec<&str> = input.lines().collect();
     let step = 7;
 
     let mut items: Vec<Item> = Vec::new();
 
     let mut monkeys: Vec<Monkey> = Vec::new();
+    let mut big_prime = 1;
 
     for x in (0..lines.len()).step_by(step) {
         let mut monkey = Monkey::default();
@@ -186,15 +196,17 @@ pub fn part_two(input: &str) -> Option<u32> {
             }
         }
 
+        big_prime *= monkey.div;
+
         monkeys.push(monkey);
     }
 
-    for _i in 0..1000 {
+    for _i in 0..10000 {
         for monkey in monkeys.iter_mut() {
             for item in items.iter_mut() {
                 if monkey.id == item.holder {
                     monkey.inspect += 1;
-                    item.perform_op(&monkey.op, &monkey.op_num, 1);
+                    item.perform_op(&monkey.op, &monkey.op_num, 1, big_prime);
                     if item.throw_item_true(&monkey.div) {
                         item.holder = monkey.true_throw_to;
                     } else {
@@ -232,7 +244,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
         assert_eq!(part_two(&input), Some(2713310158));

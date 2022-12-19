@@ -1,9 +1,15 @@
 use std::{cmp::Ordering, str::Chars};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Ord)]
 enum Val {
     Num(i32),
     List(Vec<Self>),
+}
+
+impl PartialOrd for Val {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.compare(other))
+    }
 }
 
 impl Val {
@@ -113,7 +119,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     let mut sum = 0;
     for (index, pair) in pairs.iter().enumerate() {
-        if pair.0.compare(&pair.1) == Ordering::Less {
+        if pair.0 < pair.1 {
             sum += index + 1;
         }
     }
@@ -122,7 +128,42 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut pairs: Vec<(Val, Val)> = Vec::new();
+
+    for line in input
+        .lines()
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<&str>>()
+        .chunks(2)
+    {
+        let left = Val::parse(&line[0]);
+        let right = Val::parse(&line[1]);
+
+        pairs.push((left, right));
+    }
+
+    let mut list = Vec::new();
+
+    for p in pairs {
+        list.push(p.0.clone());
+        list.push(p.1.clone());
+    }
+    let d2 = Val::parse("[[2]]");
+    let d6 = Val::parse("[[6]]");
+    list.push(d2.clone());
+    list.push(d6.clone());
+
+    list.sort();
+
+    let mut answer = 1;
+
+    for (index, val) in list.iter().enumerate() {
+        if *val == d2 || *val == d6 {
+            answer *= index + 1;
+        }
+    }
+
+    Some(answer as u32)
 }
 
 // Over 2456, under 5088,5089,5176,5761,5793
@@ -145,6 +186,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 13);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(140));
     }
 }

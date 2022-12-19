@@ -1,85 +1,5 @@
 use std::collections::BTreeMap;
 
-fn compare_vec(
-    a: &Vec<usize>,
-    b: &Vec<usize>,
-    t: &BTreeMap<usize, Vec<usize>>,
-    correct_order: &mut bool,
-) {
-    // println!("Left:  {:?}", a);
-    // println!("Right: {:?}\n", b);
-
-    // if a.len() > b.len() {
-    //     *correct_order = false;
-    //     return;
-    // } else if a.len() < b.len() {
-    //     *correct_order = true;
-    //     return;
-    // }
-
-    let range = a.len().max(b.len());
-
-    for i in 0..range {
-        if a.is_empty() {
-            *correct_order = true;
-            return;
-        }
-        if b.is_empty() {
-            *correct_order = false;
-            return;
-        }
-
-        if i >= a.len() {
-            continue;
-        }
-        let l_a = a[i];
-
-        if i >= b.len() {
-            continue;
-        }
-        let l_b = b[i];
-
-        if l_a > 1000 && l_b > 1000 {
-            let l_a = t.get(&l_a).unwrap();
-            let l_b = t.get(&l_b).unwrap();
-            compare_vec(l_a, l_b, t, correct_order);
-            continue;
-        } else if l_a > 1000 {
-            let l_a = t.get(&l_a).unwrap();
-            compare_vec(l_a, &b[i..].to_vec(), t, correct_order);
-            continue;
-        } else if l_b > 1000 {
-            let l_b = t.get(&l_b).unwrap();
-            compare_vec(a, l_b, t, correct_order);
-            continue;
-        }
-
-        if l_a > l_b {
-            *correct_order = false;
-            return;
-        }
-
-        if l_a < l_b {
-            *correct_order = true;
-            return;
-        }
-
-        if i == a.len() - 1 && b.len() > a.len() {
-            *correct_order = true;
-            return;
-        }
-
-        if i == b.len() - 1 && a.len() > b.len() {
-            *correct_order = false;
-            return;
-        }
-
-        if l_a == l_b {
-            continue;
-        }
-    }
-}
-
 pub fn part_one(input: &str) -> Option<u32> {
     let mut table: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
     let mut pairs: Vec<Vec<usize>> = Vec::new();
@@ -122,11 +42,8 @@ pub fn part_one(input: &str) -> Option<u32> {
         compare_vec(left, right, &table, &mut correct_order);
         if correct_order {
             sum += (p_i as u32 / 2) + 1;
-            dbg!(sum);
         }
     }
-
-    //dbg!(table);
 
     Some(sum)
 }
@@ -135,10 +52,88 @@ pub fn part_two(input: &str) -> Option<u32> {
     None
 }
 
+// Over 2456, under 5088,5176,5761,5793
 fn main() {
     let input = &advent_of_code::read_file("inputs", 13);
     advent_of_code::solve!(1, part_one, input);
     advent_of_code::solve!(2, part_two, input);
+}
+
+fn compare_vec(
+    a: &Vec<usize>,
+    b: &Vec<usize>,
+    t: &BTreeMap<usize, Vec<usize>>,
+    correct_order: &mut bool,
+) {
+    // println!("Left: {:?}", &a);
+    // println!("Right: {:?}", &b);
+
+    *correct_order = false;
+    let range = a.len().max(b.len());
+
+    if range == 0 {
+        *correct_order = true;
+        return;
+    }
+
+    for i in 0..range {
+        if i >= a.len() {
+            *correct_order = true;
+            return;
+        }
+        let l_a = a[i];
+
+        if i >= b.len() {
+            *correct_order = false;
+            return;
+        }
+        let l_b = b[i];
+
+        if l_a > 1000 && l_b > 1000 {
+            let mut l_a = t.get(&l_a).unwrap().clone();
+            l_a.extend(&a[i + 1..].to_vec());
+            let mut l_b = t.get(&l_b).unwrap().clone();
+            l_b.extend(&b[i + 1..].to_vec());
+            compare_vec(&l_a, &l_b, t, correct_order);
+            return;
+        } else if l_a > 1000 {
+            let mut l_a = t.get(&l_a).unwrap().clone();
+            l_a.extend(&a[i + 1..].to_vec());
+
+            compare_vec(&l_a, &b[i..].to_vec(), t, correct_order);
+            return;
+        } else if l_b > 1000 {
+            let mut l_b = t.get(&l_b).unwrap().clone();
+            l_b.extend(&b[i + 1..].to_vec());
+
+            compare_vec(&a[i..].to_vec(), &l_b, t, correct_order);
+            return;
+        }
+
+        if l_a > l_b {
+            *correct_order = false;
+            return;
+        }
+
+        if l_a < l_b {
+            *correct_order = true;
+            return;
+        }
+
+        if i == a.len() - 1 && b.len() > a.len() {
+            *correct_order = true;
+            return;
+        }
+
+        if i == b.len() - 1 && a.len() > b.len() {
+            *correct_order = false;
+            return;
+        }
+
+        if l_a == l_b {
+            continue;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -176,6 +171,7 @@ mod tests {
         table.insert(1013, vec![3, 1014]);
         table.insert(1014, vec![4, 1015]);
         table.insert(1015, vec![5, 6, 0]);
+        table.insert(1016, vec![0, 0, 0]);
 
         let mut correct_order = false;
         let left: Vec<usize> = vec![1, 1, 3, 1, 1];
@@ -224,5 +220,17 @@ mod tests {
         let right: Vec<usize> = vec![1, 1012, 8, 9];
         compare_vec(&left, &right, &table, &mut correct_order);
         assert_eq!(correct_order, false);
+
+        let mut correct_order = false;
+        let left: Vec<usize> = vec![1016];
+        let right: Vec<usize> = vec![2];
+        compare_vec(&left, &right, &table, &mut correct_order);
+        assert_eq!(correct_order, true);
+
+        let mut correct_order = false;
+        let left: Vec<usize> = vec![];
+        let right: Vec<usize> = vec![];
+        compare_vec(&left, &right, &table, &mut correct_order);
+        assert_eq!(correct_order, true);
     }
 }

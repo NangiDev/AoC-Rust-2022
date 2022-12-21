@@ -9,7 +9,7 @@
 				"advent_of_code",
 				"--bin",
 				// "${file}",
-				"14",
+				"15",
 				"--",
 				"tests",
 				"--nocapture"

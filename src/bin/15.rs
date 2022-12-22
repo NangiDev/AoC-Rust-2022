@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Eq, PartialOrd, Ord, PartialEq)]
 struct Unit {
-    x: i32,
-    y: i32,
+    x: i128,
+    y: i128,
 }
 
 impl Unit {
-    fn calc_dist(&self, beacon: &Self) -> i32 {
+    fn calc_dist(&self, beacon: &Self) -> i128 {
         (self.x - beacon.x).abs() + (self.y - beacon.y).abs()
     }
     pub fn is_closer(&self, beacon: &Self, other: &Self) -> bool {
@@ -15,11 +15,11 @@ impl Unit {
     }
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
-    let mut x_min = i32::MAX;
-    let mut x_max = i32::MIN;
-    let mut y_min = i32::MAX;
-    let mut y_max = i32::MIN;
+pub fn part_one(input: &str) -> Option<u128> {
+    let mut x_min = i128::MAX;
+    let mut x_max = i128::MIN;
+    let mut y_min = i128::MAX;
+    let mut y_max = i128::MIN;
 
     let mut sens_beac: BTreeMap<Unit, Unit> = BTreeMap::new();
     input.lines().for_each(|s| {
@@ -30,10 +30,10 @@ pub fn part_one(input: &str) -> Option<u32> {
             .replace("Sensor at x=", "");
 
         for t in t.split_whitespace().collect::<Vec<&str>>().windows(4) {
-            let s_x = t[0].parse::<i32>().unwrap();
-            let s_y = t[1].parse::<i32>().unwrap();
-            let b_x = t[2].parse::<i32>().unwrap();
-            let b_y = t[3].parse::<i32>().unwrap();
+            let s_x = t[0].parse::<i128>().unwrap();
+            let s_y = t[1].parse::<i128>().unwrap();
+            let b_x = t[2].parse::<i128>().unwrap();
+            let b_y = t[3].parse::<i128>().unwrap();
             x_min = x_min.min(s_x.min(b_x));
             y_min = y_min.min(s_y.min(b_y));
             x_max = x_max.max(s_x.max(b_x));
@@ -58,14 +58,14 @@ pub fn part_one(input: &str) -> Option<u32> {
         }
     }
 
-    Some(count as u32)
+    Some(count as u128)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let mut x_min = i32::MAX;
-    let mut x_max = i32::MIN;
-    let mut y_min = i32::MAX;
-    let mut y_max = i32::MIN;
+pub fn part_two(input: &str) -> Option<u128> {
+    let mut x_min = i128::MAX;
+    let mut x_max = i128::MIN;
+    let mut y_min = i128::MAX;
+    let mut y_max = i128::MIN;
 
     let mut sens_beac: BTreeMap<Unit, Unit> = BTreeMap::new();
     input.lines().for_each(|s| {
@@ -76,10 +76,10 @@ pub fn part_two(input: &str) -> Option<u32> {
             .replace("Sensor at x=", "");
 
         for t in t.split_whitespace().collect::<Vec<&str>>().windows(4) {
-            let s_x = t[0].parse::<i32>().unwrap();
-            let s_y = t[1].parse::<i32>().unwrap();
-            let b_x = t[2].parse::<i32>().unwrap();
-            let b_y = t[3].parse::<i32>().unwrap();
+            let s_x = t[0].parse::<i128>().unwrap();
+            let s_y = t[1].parse::<i128>().unwrap();
+            let b_x = t[2].parse::<i128>().unwrap();
+            let b_y = t[3].parse::<i128>().unwrap();
             x_min = x_min.min(s_x.min(b_x));
             y_min = y_min.min(s_y.min(b_y));
             x_max = x_max.max(s_x.max(b_x));
@@ -103,24 +103,26 @@ pub fn part_two(input: &str) -> Option<u32> {
             for (sensor, beacon) in &sens_beac {
                 if sensor.is_closer(beacon, &other) {
                     found = false;
-                    x = (sensor.x - beacon.x).abs().max((sensor.x - beacon.x).abs()) + sensor.x;
-                    // if sensor.x > other.x {
-                    //     x += (sensor.x - beacon.x).abs() * 2;
-                    // } else {
-                    //     x += (sensor.x - beacon.x).abs() + sensor.x;
-                    // }
+                    let b_dist = sensor.calc_dist(beacon);
+                    let o_dist = sensor.calc_dist(&other);
+
+                    if other.x >= sensor.x {
+                        x += (b_dist - o_dist).max(1);
+                    } else {
+                        x += ((sensor.x - other.x).abs() + b_dist - o_dist).max(1);
+                    }
                     break;
                 }
             }
 
             if found {
                 count = other.x * 4_000_000 + y;
-                return Some(count as u32);
+                return Some(count as u128);
             }
         }
     }
 
-    Some(count as u32)
+    Some(count as u128)
 }
 
 fn main() {

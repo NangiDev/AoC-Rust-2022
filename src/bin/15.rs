@@ -90,8 +90,8 @@ pub fn part_two(input: &str) -> Option<u128> {
     });
 
     let mut count = 0;
-    //let coord_cap = 20;
-    let coord_cap = 4_000_000;
+    let coord_cap = 20;
+    //let coord_cap = 4_000_000;
 
     for y in y_min.max(0)..=y_max.min(coord_cap) {
         let mut x = x_min.max(0);
